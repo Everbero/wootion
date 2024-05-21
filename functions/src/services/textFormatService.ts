@@ -40,6 +40,7 @@ const formatContent = (blocks: ContentBlock[]): string => {
         break;
       case "heading_3":
         formattedContent += `<h3>${content}</h3>`;
+        // Append childContent outside of the h3 tag if it contains list items
         if (block.children && block.children.some(child => child.type === "bulleted_list_item")) {
           formattedContent += `<ul>${childContent}</ul>`;
         } else {
@@ -111,7 +112,7 @@ const extractAndFormatContent = (content: ContentBlock[]): Record<string, string
         }
       });
       formattedContent["short_description"] = shortDescription;
-      formattedContent["description"] = `<div class='description'>${description}</div>`;
+      formattedContent["description"] = `<div class="description">${description}</div>`;
     } else if (key === "Nome do Produto no Guru") {
       formattedContent["name"] = block.content.split(':')[1].trim();
     } else if (key === "Informações Gerais do Curso") {
@@ -130,23 +131,23 @@ const extractAndFormatContent = (content: ContentBlock[]): Record<string, string
           childContent = childContent.replace(/<li>/g, '').replace(/<\/li>/g, '');
           formattedContent[key] += childContent;
         } else {
-          childContent = `<div class='${sanitizeClassName(key)}'>${childContent}</div>`;
+          childContent = `<div class="${sanitizeClassName(key)}">${childContent}</div>`;
           formattedContent[key] = childContent;
         }
 
       } else {
         value = formatContent([block]);
         if (key === block.content) {
-          formattedContent[key] = `<div class='${sanitizeClassName(key)}'>${value}</div>`;
+          formattedContent[key] = `<div class="${sanitizeClassName(key)}">${value}</div>`;
         } else {
-          formattedContent[key] = `<div class='${sanitizeClassName(key)}'>${block.content.split(':')[1]}</div>`;
+          formattedContent[key] = `<div class="${sanitizeClassName(key)}">${block.content.split(':')[1]}</div>`;
         }
       }
     }
   });
 
   if (detailedContent) {
-    formattedContent["description"] += `<div class='conteudo-detalhado'>${detailedContent}</div>`;
+    formattedContent["description"] += `<div class="conteudo-detalhado">${detailedContent}</div>`;
   }
 
   // Remove empty keys
