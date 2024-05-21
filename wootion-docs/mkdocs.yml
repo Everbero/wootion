@@ -1,0 +1,7 @@
+site_name: Wootion
+plugins: 
+  - mermaid2
+theme: material
+hide:
+  - navigation
+  - toc
