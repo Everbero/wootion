@@ -161,6 +161,8 @@ const extractPropertyValue = (property: any): any => {
       return property.people.map((person: any) => person.name);
     case 'files':
       return property.files.map((file: any) => file.file.url);
+    case 'url':
+      return property.url;
     default:
       return null;
   }
