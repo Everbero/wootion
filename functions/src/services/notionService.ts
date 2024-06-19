@@ -1,4 +1,4 @@
-import { Client } from "@notionhq/client";
+import {Client} from "@notionhq/client";
 import * as dotenv from "dotenv";
 import * as admin from "firebase-admin";
 import {
@@ -32,7 +32,7 @@ if (!admin.apps.length) {
 }
 const db = admin.firestore();
 
-const notion = new Client({ auth: process.env.NOTION_API_KEY });
+const notion = new Client({auth: process.env.NOTION_API_KEY});
 const databaseId = process.env.NOTION_DATABASE_ID;
 
 interface Product {
@@ -82,7 +82,7 @@ export const getActiveSalesProducts = async (): Promise<Product[]> => {
 
   // Salvar produtos no Firestore
   const batch = db.batch();
-  
+
   for (const product of products) {
     const productRef = db.collection("products").doc(product.id);
 
@@ -90,16 +90,16 @@ export const getActiveSalesProducts = async (): Promise<Product[]> => {
     const existingDoc = await productRef.get();
     if (existingDoc.exists) {
       const existingData = existingDoc.data();
-      
+
       // Verifica se o wcID atual no Firestore é um número válido
-      if (existingData?.wcID !== undefined && typeof existingData.wcID === 'number' && !isNaN(existingData.wcID)) {
+      if (existingData?.wcID !== undefined && typeof existingData.wcID === "number" && !isNaN(existingData.wcID)) {
         // Mantém o wcID existente, substitui o wcID no product pelo existente
         product.wcID = existingData.wcID;
       }
     }
 
     // Adiciona o produto ao batch
-    batch.set(productRef, product, { merge: true });
+    batch.set(productRef, product, {merge: true});
   }
 
   await batch.commit();
@@ -109,7 +109,7 @@ export const getActiveSalesProducts = async (): Promise<Product[]> => {
 
 
 export const getProductDetailsFromNotion = async (pageId: string): Promise<SimplifiedPage> => {
-  const page = await notion.pages.retrieve({ page_id: pageId }) as PageObjectResponse;
+  const page = await notion.pages.retrieve({page_id: pageId}) as PageObjectResponse;
   const blocks = await getBlockChildren(pageId);
 
   const simplifiedPage: SimplifiedPage = {
@@ -133,8 +133,10 @@ const getBlockChildren = async (blockId: string): Promise<any[]> => {
       block_id: blockId,
       start_cursor: cursor,
     });
-    const { results, next_cursor } = response;
+    // eslint-disable-next-line
+    const {results, next_cursor} = response;
     blocks.push(...(results as BlockObjectResponse[]));
+    // eslint-disable-next-line
     cursor = next_cursor;
   } while (cursor);
 
@@ -146,7 +148,7 @@ const getBlockChildren = async (blockId: string): Promise<any[]> => {
   return simplifiedBlocks;
 };
 
-const extractProperties = (properties: PageObjectResponse['properties']): Record<string, any> => {
+const extractProperties = (properties: PageObjectResponse["properties"]): Record<string, any> => {
   const simplifiedProperties: Record<string, any> = {};
   for (const key in properties) {
     if (properties.hasOwnProperty(key)) {
@@ -159,52 +161,53 @@ const extractProperties = (properties: PageObjectResponse['properties']): Record
 
 const extractPropertyValue = (property: any): any => {
   switch (property.type) {
-    case 'title':
-      return property.title.map(extractTextContent).join('');
-    case 'rich_text':
-      return property.rich_text.map(extractTextContent).join('');
-    case 'number':
-      return property.number;
-    case 'select':
-      return property.select ? property.select.name : null;
-    case 'multi_select':
-      return property.multi_select.map((item: any) => item.name);
-    case 'date':
-      return property.date ? property.date.start : null;
-    case 'formula':
-      return property.formula ? property.formula.string : null;
-    case 'relation':
-      return property.relation.map((item: any) => item.id);
-    case 'rollup':
-      return property.rollup.array.map((item: any) => extractPropertyValue(item));
-    case 'people':
-      return property.people.map((person: any) => person.name);
-    case 'files':
-      return property.files.map((file: any) => file.file.url);
-    case 'url':
-      return property.url;
-    default:
-      return null;
+  case "title":
+    return property.title.map(extractTextContent).join("");
+  case "rich_text":
+    return property.rich_text.map(extractTextContent).join("");
+  case "number":
+    return property.number;
+  case "select":
+    return property.select ? property.select.name : null;
+  case "multi_select":
+    return property.multi_select.map((item: any) => item.name);
+  case "date":
+    return property.date ? property.date.start : null;
+  case "formula":
+    return property.formula ? property.formula.string : null;
+  case "relation":
+    return property.relation.map((item: any) => item.id);
+  case "rollup":
+    return property.rollup.array.map((item: any) => extractPropertyValue(item));
+  case "people":
+    return property.people.map((person: any) => person.name);
+  case "files":
+    return property.files.map((file: any) => file.file.url);
+  case "url":
+    return property.url;
+  default:
+    return null;
   }
 };
 
 const extractTextContent = (richTextItem: RichTextItemResponse): string => {
-  if ('text' in richTextItem) {
+  if ("text" in richTextItem) {
     return richTextItem.text.content;
-  } else if ('mention' in richTextItem) {
-    return '[Mention]';
-  } else if ('equation' in richTextItem) {
+  } else if ("mention" in richTextItem) {
+    return "[Mention]";
+  } else if ("equation" in richTextItem) {
     return richTextItem.equation.expression;
   }
-  return '';
+  return "";
 };
 
 const simplifyBlock = async (block: BlockObjectResponse): Promise<Record<string, any>> => {
-  const { id, type, has_children } = block;
+  // eslint-disable-next-line
+  const {id, type, has_children} = block;
   const content = await extractBlockContent(block);
 
-  const simplifiedBlock: Record<string, any> = { id, type, content };
-
+  const simplifiedBlock: Record<string, any> = {id, type, content};
+  // eslint-disable-next-line
   if (has_children) {
     const children = await getBlockChildren(block.id);
     simplifiedBlock.children = children;
@@ -215,43 +218,43 @@ const simplifyBlock = async (block: BlockObjectResponse): Promise<Record<string,
 
 const extractBlockContent = async (block: BlockObjectResponse): Promise<string> => {
   switch (block.type) {
-    case 'paragraph':
-      return (block as ParagraphBlockObjectResponse).paragraph.rich_text.map(extractTextContent).join(' ');
-    case 'heading_1':
-      return (block as Heading1BlockObjectResponse).heading_1.rich_text.map(extractTextContent).join(' ');
-    case 'heading_2':
-      return (block as Heading2BlockObjectResponse).heading_2.rich_text.map(extractTextContent).join(' ');
-    case 'heading_3':
-      return (block as Heading3BlockObjectResponse).heading_3.rich_text.map(extractTextContent).join(' ');
-    case 'bulleted_list_item':
-      return (block as BulletedListItemBlockObjectResponse).bulleted_list_item.rich_text.map(extractTextContent).join(' ');
-    case 'numbered_list_item':
-      return (block as NumberedListItemBlockObjectResponse).numbered_list_item.rich_text.map(extractTextContent).join(' ');
-    case 'to_do':
-      return (block as ToDoBlockObjectResponse).to_do.rich_text.map(extractTextContent).join(' ');
-    case 'toggle':
-      return (block as ToggleBlockObjectResponse).toggle.rich_text.map(extractTextContent).join(' ');
-    case 'child_page':
-      return (block as ChildPageBlockObjectResponse).child_page.title;
-    case 'callout':
-      return (block as CalloutBlockObjectResponse).callout.rich_text.map(extractTextContent).join(' ');
-    case 'quote':
-      return (block as QuoteBlockObjectResponse).quote.rich_text.map(extractTextContent).join(' ');
-    case 'code':
-      return (block as CodeBlockObjectResponse).code.rich_text.map(extractTextContent).join(' ');
-    case 'divider':
-      return '---';
-    case 'image':
-      return (block as ImageBlockObjectResponse).image.caption.map(extractTextContent).join(' ');
-    case 'video':
-      return (block as VideoBlockObjectResponse).video.caption.map(extractTextContent).join(' ');
-    case 'file':
-      return (block as FileBlockObjectResponse).file.caption.map(extractTextContent).join(' ');
-    case 'pdf':
-      return (block as PdfBlockObjectResponse).pdf.caption.map(extractTextContent).join(' ');
-    case 'bookmark':
-      return (block as BookmarkBlockObjectResponse).bookmark.caption.map(extractTextContent).join(' ');
-    default:
-      return '';
+  case "paragraph":
+    return (block as ParagraphBlockObjectResponse).paragraph.rich_text.map(extractTextContent).join(" ");
+  case "heading_1":
+    return (block as Heading1BlockObjectResponse).heading_1.rich_text.map(extractTextContent).join(" ");
+  case "heading_2":
+    return (block as Heading2BlockObjectResponse).heading_2.rich_text.map(extractTextContent).join(" ");
+  case "heading_3":
+    return (block as Heading3BlockObjectResponse).heading_3.rich_text.map(extractTextContent).join(" ");
+  case "bulleted_list_item":
+    return (block as BulletedListItemBlockObjectResponse).bulleted_list_item.rich_text.map(extractTextContent).join(" ");
+  case "numbered_list_item":
+    return (block as NumberedListItemBlockObjectResponse).numbered_list_item.rich_text.map(extractTextContent).join(" ");
+  case "to_do":
+    return (block as ToDoBlockObjectResponse).to_do.rich_text.map(extractTextContent).join(" ");
+  case "toggle":
+    return (block as ToggleBlockObjectResponse).toggle.rich_text.map(extractTextContent).join(" ");
+  case "child_page":
+    return (block as ChildPageBlockObjectResponse).child_page.title;
+  case "callout":
+    return (block as CalloutBlockObjectResponse).callout.rich_text.map(extractTextContent).join(" ");
+  case "quote":
+    return (block as QuoteBlockObjectResponse).quote.rich_text.map(extractTextContent).join(" ");
+  case "code":
+    return (block as CodeBlockObjectResponse).code.rich_text.map(extractTextContent).join(" ");
+  case "divider":
+    return "---";
+  case "image":
+    return (block as ImageBlockObjectResponse).image.caption.map(extractTextContent).join(" ");
+  case "video":
+    return (block as VideoBlockObjectResponse).video.caption.map(extractTextContent).join(" ");
+  case "file":
+    return (block as FileBlockObjectResponse).file.caption.map(extractTextContent).join(" ");
+  case "pdf":
+    return (block as PdfBlockObjectResponse).pdf.caption.map(extractTextContent).join(" ");
+  case "bookmark":
+    return (block as BookmarkBlockObjectResponse).bookmark.caption.map(extractTextContent).join(" ");
+  default:
+    return "";
   }
 };

@@ -6,4 +6,3 @@ export interface Product {
     stock_quantity: number;
     images: string[];
   }
-  

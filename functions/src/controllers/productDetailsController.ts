@@ -1,14 +1,14 @@
-import { Request, Response } from "express";
-import { getProductDetailsFromNotion } from "../services/notionService";
+import {Request, Response} from "express";
+import {getProductDetailsFromNotion} from "../services/notionService";
 import * as functions from "firebase-functions";
-import { formatTextContent } from "../services/textFormatService";
-import { formatForWooCommerce } from "./woocommerceFormatController";
+import {formatTextContent} from "../services/textFormatService";
+import {formatForWooCommerce} from "./woocommerceFormatController";
 
 export const getProductDetails = async (
   req: Request,
   res: Response
 ): Promise<void> => {
-  const { id } = req.query;
+  const {id} = req.query;
 
   if (!id) {
     res.status(400).send("Product ID is required");
@@ -32,7 +32,7 @@ export const getFormattedProductDetails = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { id } = req.query;
+    const {id} = req.query;
 
     if (!id) {
       res.status(400).send("Product ID is required");
@@ -53,7 +53,6 @@ export const getFormattedProductDetailsInternal = async (
   id: string
 ): Promise<any> => {
   try {
-   
     if (!id) {
       throw new Error("Product ID is required");
     }
@@ -61,7 +60,7 @@ export const getFormattedProductDetailsInternal = async (
     const productDetails = await getProductDetailsFromNotion(id as string);
     const formattedDetails = await formatTextContent(productDetails);
     const wooCommerceProduct = formatForWooCommerce(formattedDetails);
-    
+
     return wooCommerceProduct;
   } catch (error) {
     throw new Error("Internal Server Error");

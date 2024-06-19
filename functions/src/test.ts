@@ -1,6 +1,6 @@
-import { checkActiveSales } from './controllers/productController';
-import * as dotenv from 'dotenv';
-import { initializeApp } from 'firebase-admin/app';
+import {checkActiveSales} from "./controllers/productController";
+import * as dotenv from "dotenv";
+import {initializeApp} from "firebase-admin/app";
 
 // Carregar variáveis de ambiente
 dotenv.config();
@@ -9,7 +9,7 @@ dotenv.config();
 initializeApp();
 
 const runCheckActiveSales = async () => {
-  console.log('Running checkActiveSales function...');
+  console.log("Running checkActiveSales function...");
   await checkActiveSales();
 };
 
