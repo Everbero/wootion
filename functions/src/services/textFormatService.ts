@@ -1,4 +1,16 @@
-type BlockType = "callout" | "paragraph" | "bulleted_list_item" | "heading_2" | "heading_3" | "divider" | "quote" | "table" | "table_row" | "child_database" | "column_list" | "column";
+type BlockType =
+  | "callout"
+  | "paragraph"
+  | "bulleted_list_item"
+  | "heading_2"
+  | "heading_3"
+  | "divider"
+  | "quote"
+  | "table"
+  | "table_row"
+  | "child_database"
+  | "column_list"
+  | "column";
 
 interface ContentBlock {
   id: string;
@@ -15,16 +27,25 @@ interface ProductDetails {
   content: ContentBlock[];
 }
 
-const exclusionList = ["ORDERBUMP", "CONDIÇÕES COMERCIAIS", "Links do Produto", "Informações de Marketing"];
+const exclusionList = [
+  "ORDERBUMP",
+  "CONDIÇÕES COMERCIAIS",
+  "Links do Produto",
+  "Informações de Marketing",
+];
 
-const sanitizeClassName = (name: string): string => {
-  return name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
-};
+// const sanitizeClassName = (name: string): string => {
+//   return name
+//     .toLowerCase()
+//     .replace(/[^a-z0-9]/g, "-")
+//     .replace(/-+/g, "-")
+//     .replace(/^-|-$/g, "");
+// };
 
 const formatContent = (blocks: ContentBlock[]): string => {
   let formattedContent = "";
 
-  blocks.forEach(block => {
+  blocks.forEach((block) => {
     let content = block.content;
     let childContent = block.children ? formatContent(block.children) : "";
 
@@ -41,7 +62,10 @@ const formatContent = (blocks: ContentBlock[]): string => {
       case "heading_3":
         formattedContent += `<h3>${content}</h3>`;
         // Append childContent outside of the h3 tag if it contains list items
-        if (block.children && block.children.some(child => child.type === "bulleted_list_item")) {
+        if (
+          block.children &&
+          block.children.some((child) => child.type === "bulleted_list_item")
+        ) {
           formattedContent += `<ul>${childContent}</ul>`;
         } else {
           formattedContent += childContent;
@@ -66,18 +90,22 @@ const formatContent = (blocks: ContentBlock[]): string => {
 };
 
 const shouldExcludeBlock = (block: ContentBlock): boolean => {
-  const key = block.content.split(':')[0].trim();
+  const key = block.content.split(":")[0].trim();
   if (exclusionList.includes(key)) {
     return true;
   }
-  if (key === "BÔNUS" && block.children && block.children.every(child => child.content === "Não se aplica.")) {
+  if (
+    key === "BÔNUS" &&
+    block.children &&
+    block.children.every((child) => child.content === "Não se aplica.")
+  ) {
     return true;
   }
   return false;
 };
 
 const filterExclusionList = (content: ContentBlock[]): ContentBlock[] => {
-  return content.filter(block => {
+  return content.filter((block) => {
     if (shouldExcludeBlock(block)) {
       return false;
     }
@@ -88,71 +116,100 @@ const filterExclusionList = (content: ContentBlock[]): ContentBlock[] => {
   });
 };
 
-const extractAndFormatContent = (content: ContentBlock[]): Record<string, string> => {
+const extractAndFormatContent = (
+  content: ContentBlock[]
+): Record<string, string> => {
   let formattedContent: Record<string, string> = {};
-  let shortDescription = "";
+  // let shortDescription = "";
   let description = "";
-  let inDescriptionSection = false;
+  // let inDescriptionSection = false;
   let detailedContent = "";
 
-  content.forEach(block => {
-    let key = block.content.split(':')[0].trim();
-    let value = "";
+  content.forEach((block) => {
+    let key = block.content.split(":")[0].trim();
+    // let value = "";
 
-    if (key === "Script E-commerce") {
-      block.children?.forEach(childBlock => {
-        if (childBlock.content.startsWith("Headline:")) {
-          shortDescription += `<h2>${childBlock.content.replace("Headline:", "").trim()}</h2>`;
-        } else if (childBlock.content.startsWith("Subheadline:")) {
-          shortDescription += `<p>${childBlock.content.replace("Subheadline:", "").trim()}</p>`;
-        } else if (childBlock.content === "Descrição:") {
-          inDescriptionSection = true;
-        } else if (inDescriptionSection) {
-          description += formatContent([childBlock]);
-        }
+    if (key === "Descrição e-commerce") {
+      block.children?.forEach((childBlock) => {
+        description += formatContent([childBlock]);
       });
-      formattedContent["short_description"] = shortDescription;
-      formattedContent["description"] = `<div class="description">${description}</div>`;
+     
+      formattedContent[
+        "description"
+      ] = `<div class="description">${description}</div>`;
+
     } else if (key === "Nome do Produto no Guru") {
-      formattedContent["name"] = block.content.split(':')[1].trim();
+
+      formattedContent["name"] = block.content.split(":")[1].trim();
+
     } else if (key === "Informações Gerais do Curso") {
-      block.children?.forEach(childBlock => {
+
+      block.children?.forEach((childBlock) => {
         if (childBlock.content === "CONTEÚDO DETALHADO:") {
           detailedContent = formatContent(childBlock.children || []);
         }
       });
-    } else {
-      if (block.children && block.children.length > 0) {
-        let childContent = formatContent(block.children);
+    }
+    // else {
+      
+    //   if (block.children && block.children.length > 0) {
+    //     let childContent = formatContent(block.children);
+    //     // Ensure list items are not nested in headings
+    //     if (block.type === "heading_3" || block.type === "heading_2") {
+    //       formattedContent[key] = `<h3>${block.content}</h3>`;
+    //       childContent = childContent
+    //         .replace(/<li>/g, "")
+    //         .replace(/<\/li>/g, "");
+    //       formattedContent[key] += childContent;
+    //     } else {
+    //       childContent = `<div class="${sanitizeClassName(
+    //         key
+    //       )}">${childContent}</div>`;
+    //       formattedContent[key] = childContent;
+    //     }
+    //   } else {
+    //     value = formatContent([block]);
+    //     if (key === block.content) {
+    //       formattedContent[key] = `<div class="${sanitizeClassName(
+    //         key
+    //       )}">${value}</div>`;
+    //     } else {
+    //       formattedContent[key] = `<div class="${sanitizeClassName(key)}">${
+    //         block.content.split(":")[1]
+    //       }</div>`;
+    //     }
+    //   }
+    // }
+    // extrai a descrição curta do produto
+    if (key === "Headline e-commerce") {
 
-        // Ensure list items are not nested in headings
-        if (block.type === "heading_3" || block.type === "heading_2") {
-          formattedContent[key] = `<h3>${block.content}</h3>`;
-          childContent = childContent.replace(/<li>/g, '').replace(/<\/li>/g, '');
-          formattedContent[key] += childContent;
-        } else {
-          childContent = `<div class="${sanitizeClassName(key)}">${childContent}</div>`;
-          formattedContent[key] = childContent;
-        }
+      block.children?.forEach((childBlock) => {
+        formattedContent["short_description"] = `<h2>${childBlock.content
+          .replace("Headline:", "")
+          .trim()}</h2>`;
+      });
+    }
+    // extrai a descrição curta do produto
+    if (key === "Subheadline e-commerce") {
+      
 
-      } else {
-        value = formatContent([block]);
-        if (key === block.content) {
-          formattedContent[key] = `<div class="${sanitizeClassName(key)}">${value}</div>`;
-        } else {
-          formattedContent[key] = `<div class="${sanitizeClassName(key)}">${block.content.split(':')[1]}</div>`;
-        }
-      }
+      block.children?.forEach((childBlock) => {
+        formattedContent["short_description"] += `<p>${childBlock.content
+          .replace("Subheadline:", "")
+          .trim()}</p>`;
+      });
     }
   });
 
   if (detailedContent) {
-    formattedContent["description"] += `<div class="conteudo-detalhado">${detailedContent}</div>`;
+    formattedContent[
+      "description"
+    ] += `<div class="conteudo-detalhado">${detailedContent}</div>`;
   }
 
   // Remove empty keys
   for (let key in formattedContent) {
-    if (!formattedContent[key] || formattedContent[key].trim() === '') {
+    if (!formattedContent[key] || formattedContent[key].trim() === "") {
       delete formattedContent[key];
     }
   }
@@ -165,6 +222,6 @@ export const formatTextContent = (productDetails: ProductDetails): any => {
   const formattedContent = extractAndFormatContent(filteredContent);
   return {
     ...productDetails,
-    content: formattedContent
+    content: formattedContent,
   };
 };

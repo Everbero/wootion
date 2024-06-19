@@ -51,17 +51,18 @@ interface SimplifiedPage {
 }
 
 export const getActiveSalesProducts = async (): Promise<Product[]> => {
+  // Consulta o banco de dados do Notion
   const response = await notion.databases.query({
     database_id: databaseId as string,
     filter: {
-      property: "Vendas",
+      property: "Fluxo de Disponibilização",
       select: {
-        equals: "💲 Ativadas",
+        equals: "🛒 Disponível no e-commerce",
       },
     },
   });
 
-  // Mapeia os resultados para extrair o id, nome e data de edição
+  // Mapeia os resultados para extrair o id, nome, data de edição e wcID condicionalmente
   const products = response.results.map((product: any) => {
     const id = product.id;
     const name =
@@ -69,24 +70,43 @@ export const getActiveSalesProducts = async (): Promise<Product[]> => {
       "Unnamed product";
     const lastEditedTime = product.last_edited_time;
 
+    // Verifica se wcID já existe e é um número válido
+    const wcID = product.properties["id-wc"]?.number;
     return {
       id,
       name,
       lastEditedTime,
+      wcID,
     };
   });
 
   // Salvar produtos no Firestore
   const batch = db.batch();
-  products.forEach((product) => {
+  
+  for (const product of products) {
     const productRef = db.collection("products").doc(product.id);
-    batch.set(productRef, product);
-  });
+
+    // Recupera o documento atual para verificar wcID existente
+    const existingDoc = await productRef.get();
+    if (existingDoc.exists) {
+      const existingData = existingDoc.data();
+      
+      // Verifica se o wcID atual no Firestore é um número válido
+      if (existingData?.wcID !== undefined && typeof existingData.wcID === 'number' && !isNaN(existingData.wcID)) {
+        // Mantém o wcID existente, substitui o wcID no product pelo existente
+        product.wcID = existingData.wcID;
+      }
+    }
+
+    // Adiciona o produto ao batch
+    batch.set(productRef, product, { merge: true });
+  }
 
   await batch.commit();
 
   return products;
 };
+
 
 export const getProductDetailsFromNotion = async (pageId: string): Promise<SimplifiedPage> => {
   const page = await notion.pages.retrieve({ page_id: pageId }) as PageObjectResponse;
