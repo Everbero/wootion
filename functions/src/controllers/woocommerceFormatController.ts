@@ -36,6 +36,7 @@ type FormattedContent = {
     "Status das Aulas": string;
     "Bônus Incluídos": string;
     Preço: number;
+    "Preço Promocional": number | null;
     "Banca Examinadora": string;
     Característica: string;
     "Drive Design": string | null;
@@ -60,6 +61,7 @@ type WooCommerceProduct = {
   type: string;
   virtual: boolean;
   regular_price: string;
+  sale_price?: string;
   description: string;
   short_description: string;
   categories: Array<{ id: number }>;
@@ -83,6 +85,9 @@ export function formatForWooCommerce(
     type: "simple",
     virtual: true,
     regular_price: data.properties.Preço.toString(),
+    sale_price: data.properties["Preço Promocional"] ?
+      data.properties["Preço Promocional"].toString() :
+      "",
     description: data.content.description,
     short_description: data.content.short_description,
     categories: [{id: 85}], // Categoria Cursos
@@ -111,7 +116,7 @@ export function formatForWooCommerce(
       {key: "escolaridade", value: data.properties.Escolaridade.join(", ")},
       {
         key: "data-da-prova",
-        value: formatDate(data.properties["Data da Prova"]),
+        value: data.properties["Data da Prova"] ? formatDate(data.properties["Data da Prova"]): "Não se aplica",
       },
       {key: "link-edital", value: data.properties["Link Edital"]},
       {key: "formato", value: data.properties.Formato},
@@ -124,9 +129,9 @@ export function formatForWooCommerce(
       {key: "link-video", value: data.properties["Vídeo e-commerce"] ?? ""},
       {
         key: "inscricao",
-        value: `${formatDate(
-          data.properties["Data Inscrição"]
-        )} até ${formatDate(data.properties["Data da Prova"])}`,
+        value: data.properties["Data Inscrição"] ?
+          `${formatDate(data.properties["Data Inscrição"])} até ${formatDate(data.properties["Data da Prova"])}` :
+          "Não se aplica",
       },
       {key: "instituicao", value: ""},
       {key: "bonus_8", value: ""},

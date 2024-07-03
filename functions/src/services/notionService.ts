@@ -51,101 +51,119 @@ interface SimplifiedPage {
 }
 
 export const getActiveSalesProducts = async (): Promise<Product[]> => {
-  // Consulta o banco de dados do Notion
-  const response = await notion.databases.query({
-    database_id: databaseId as string,
-    filter: {
-      property: "Fluxo de Disponibilização",
-      select: {
-        equals: "🛒 Disponível no e-commerce",
+  try {
+    // Consulta o banco de dados do Notion
+    const response = await notion.databases.query({
+      database_id: databaseId as string,
+      filter: {
+        property: "Fluxo de Disponibilização",
+        select: {
+          equals: "🛒 Disponível no e-commerce",
+        },
       },
-    },
-  });
+    });
 
-  // Mapeia os resultados para extrair o id, nome, data de edição e wcID condicionalmente
-  const products = response.results.map((product: any) => {
-    const id = product.id;
-    const name =
-      product.properties["Produto"]?.title[0]?.text?.content ??
-      "Unnamed product";
-    const lastEditedTime = product.last_edited_time;
+    // Mapeia os resultados para extrair o id, nome, data de edição e wcID condicionalmente
+    const products = response.results.map((product: any) => {
+      const id = product.id;
+      const name =
+        product.properties["Produto"]?.title[0]?.text?.content ??
+        "Unnamed product";
+      const lastEditedTime = product.last_edited_time;
 
-    // Verifica se wcID já existe e é um número válido
-    const wcID = product.properties["id-wc"]?.number;
-    return {
-      id,
-      name,
-      lastEditedTime,
-      wcID,
-    };
-  });
+      // Verifica se wcID já existe e é um número válido
+      const wcID = product.properties["id-wc"]?.number;
+      return {
+        id,
+        name,
+        lastEditedTime,
+        wcID,
+      };
+    });
 
-  // Salvar produtos no Firestore
-  const batch = db.batch();
+    // Salvar produtos no Firestore
+    const batch = db.batch();
 
-  for (const product of products) {
-    const productRef = db.collection("products").doc(product.id);
+    for (const product of products) {
+      const productRef = db.collection("products").doc(product.id);
 
-    // Recupera o documento atual para verificar wcID existente
-    const existingDoc = await productRef.get();
-    if (existingDoc.exists) {
-      const existingData = existingDoc.data();
+      try {
+        // Recupera o documento atual para verificar wcID existente
+        const existingDoc = await productRef.get();
+        if (existingDoc.exists) {
+          const existingData = existingDoc.data();
 
-      // Verifica se o wcID atual no Firestore é um número válido
-      if (existingData?.wcID !== undefined && typeof existingData.wcID === "number" && !isNaN(existingData.wcID)) {
-        // Mantém o wcID existente, substitui o wcID no product pelo existente
-        product.wcID = existingData.wcID;
+          // Verifica se o wcID atual no Firestore é um número válido
+          if (existingData?.wcID !== undefined && typeof existingData.wcID === "number" && !isNaN(existingData.wcID)) {
+            // Mantém o wcID existente, substitui o wcID no product pelo existente
+            product.wcID = existingData.wcID;
+          }
+        }
+
+        // Adiciona o produto ao batch
+        batch.set(productRef, product, {merge: true});
+      } catch (innerError) {
+        console.error(`Erro ao acessar o documento Firestore para o produto ${product.id}:`, innerError);
       }
     }
 
-    // Adiciona o produto ao batch
-    batch.set(productRef, product, {merge: true});
+    await batch.commit();
+
+    return products;
+  } catch (error) {
+    console.error("Erro ao consultar produtos ativos do Notion:", error);
+    throw error; // Re-lançar o erro para ser tratado em nível superior
   }
-
-  await batch.commit();
-
-  return products;
 };
-
 
 export const getProductDetailsFromNotion = async (pageId: string): Promise<SimplifiedPage> => {
-  const page = await notion.pages.retrieve({page_id: pageId}) as PageObjectResponse;
-  const blocks = await getBlockChildren(pageId);
+  try {
+    const page = await notion.pages.retrieve({page_id: pageId}) as PageObjectResponse;
+    const blocks = await getBlockChildren(pageId);
 
-  const simplifiedPage: SimplifiedPage = {
-    id: page.id,
-    created_time: page.created_time,
-    last_edited_time: page.last_edited_time,
-    properties: extractProperties(page.properties),
-    content: blocks,
-  };
+    const simplifiedPage: SimplifiedPage = {
+      id: page.id,
+      created_time: page.created_time,
+      last_edited_time: page.last_edited_time,
+      properties: extractProperties(page.properties),
+      content: blocks,
+    };
 
-  return simplifiedPage;
+    return simplifiedPage;
+  } catch (error) {
+    console.error(`Erro ao obter detalhes do produto do Notion (pageId: ${pageId}):`, error);
+    throw error;
+  }
 };
-
 
 const getBlockChildren = async (blockId: string): Promise<any[]> => {
   const blocks: BlockObjectResponse[] = [];
   let cursor: string | null | undefined = undefined;
 
-  do {
-    const response: ListBlockChildrenResponse = await notion.blocks.children.list({
-      block_id: blockId,
-      start_cursor: cursor,
-    });
-    // eslint-disable-next-line
-    const {results, next_cursor} = response;
-    blocks.push(...(results as BlockObjectResponse[]));
-    // eslint-disable-next-line
-    cursor = next_cursor;
-  } while (cursor);
+  try {
+    do {
+      const response: ListBlockChildrenResponse = await notion.blocks.children.list({
+        block_id: blockId,
+        start_cursor: cursor,
+      });
+      // eslint-disable-next-line
+      const {results, next_cursor} = response;
+      blocks.push(...(results as BlockObjectResponse[]));
+      // eslint-disable-next-line
+      cursor = next_cursor;
+    } while (cursor);
 
-  const simplifiedBlocks: any[] = [];
-  for (const block of blocks) {
-    const simplifiedBlock: Record<string, any> = await simplifyBlock(block);
-    simplifiedBlocks.push(simplifiedBlock);
+    const simplifiedBlocks: any[] = [];
+    for (const block of blocks) {
+      const simplifiedBlock: Record<string, any> = await simplifyBlock(block);
+      simplifiedBlocks.push(simplifiedBlock);
+    }
+
+    return simplifiedBlocks;
+  } catch (error) {
+    console.error(`Erro ao obter os blocos filhos do Notion (blockId: ${blockId}):`, error);
+    throw error;
   }
-  return simplifiedBlocks;
 };
 
 const extractProperties = (properties: PageObjectResponse["properties"]): Record<string, any> => {

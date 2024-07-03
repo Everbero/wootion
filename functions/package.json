@@ -1,14 +1,16 @@
 {
   "name": "functions",
   "scripts": {
+    "prelint": "eslint --ext .js,.ts . --fix",
     "lint": "eslint --ext .js,.ts .",
     "build": "tsc",
     "build:watch": "tsc --watch",
     "serve": "npm run build && firebase emulators:start",
     "shell": "npm run build && firebase functions:shell",
     "start": "npm run shell",
-    "deploy": "firebase deploy --only functions",
+    "deploy": "node setFirebaseEnv.js && firebase deploy --only functions",
     "logs": "firebase functions:log",
+    "setenv": "node setFirebaseEnv.js",
     "test:function": "ts-node src/test.ts"
   },
   "engines": {
