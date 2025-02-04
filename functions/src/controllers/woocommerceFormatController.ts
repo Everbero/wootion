@@ -1,74 +1,5 @@
-type FormattedContent = {
-  id: string;
-  created_time: string;
-  last_edited_time: string;
-  properties: {
-    Vagas: number;
-    "Código Asaas": string | null;
-    Responsável: Array<string | null>;
-    "Taxa Incrição": number;
-    "Display 01": string;
-    Disciplinas: string | null;
-    "Código e-commerce": string | null;
-    Capa: Array<string>;
-    "Display Responsável": string;
-    "Link Inscrição": string | null;
-    "Data Inscrição": string;
-    Região: string;
-    Vendas: string;
-    Projetos: Array<string>;
-    "Dia Semana": string | null;
-    Carreira: string;
-    "Prazo Início": string | null;
-    Professores: Array<string>;
-    "Unidades de Negócios": Array<string>;
-    "Prazo Disponibilização": string | null;
-    Remuneração: number | null;
-    "Código Pagarme": string | null;
-    Estados: Array<string>;
-    "Data da Prova": string;
-    Formato: string;
-    "Nome Guru e Agendor": string;
-    "Display Deadline": string | null;
-    "Status do Curso": string;
-    Aulas: Array<string>;
-    "Link Edital": string;
-    "Status das Aulas": string;
-    "Bônus Incluídos": string;
-    Preço: number;
-    "Preço Promocional": number | null;
-    "Banca Examinadora": string;
-    Característica: string;
-    "Drive Design": string | null;
-    Escolaridade: Array<string>;
-    Edital: string;
-    "Fluxo de Disponibilização": string;
-    "Vídeo e-commerce": string | null;
-    "Aulas Disponibilizadas": Array<string>;
-    Produto: string;
-  };
-  content: {
-    short_description: string;
-    description: string;
-    "Script Headlines": string;
-    "Script Comercial": string;
-  };
-};
+import {FormattedContent, WooCommerceProduct} from "../models/formatModel";
 
-type WooCommerceProduct = {
-  id: number;
-  name: string;
-  type: string;
-  virtual: boolean;
-  regular_price: string;
-  sale_price?: string;
-  description: string;
-  short_description: string;
-  categories: Array<{ id: number }>;
-  acf: any;
-  images: Array<{ src: string }>;
-  meta_data: Array<{ key: string; value: any }>;
-};
 // retorna datas formatadas para exibição
 function formatDate(date: string): string {
   const dateObj = new Date(date);
@@ -116,7 +47,9 @@ export function formatForWooCommerce(
       {key: "escolaridade", value: data.properties.Escolaridade.join(", ")},
       {
         key: "data-da-prova",
-        value: data.properties["Data da Prova"] ? formatDate(data.properties["Data da Prova"]): "Não se aplica",
+        value: data.properties["Data da Prova"] ?
+          formatDate(data.properties["Data da Prova"]) :
+          "Não se aplica",
       },
       {key: "link-edital", value: data.properties["Link Edital"]},
       {key: "formato", value: data.properties.Formato},
@@ -130,7 +63,9 @@ export function formatForWooCommerce(
       {
         key: "inscricao",
         value: data.properties["Data Inscrição"] ?
-          `${formatDate(data.properties["Data Inscrição"])} até ${formatDate(data.properties["Data da Prova"])}` :
+          `${formatDate(data.properties["Data Inscrição"])} até ${formatDate(
+            data.properties["Data da Prova"]
+          )}` :
           "Não se aplica",
       },
       {key: "instituicao", value: ""},

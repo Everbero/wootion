@@ -1,4 +1,4 @@
-import {checkActiveSales} from "./controllers/productController";
+import {checkActiveSales} from "./controllers/salesController";
 import * as dotenv from "dotenv";
 import {initializeApp} from "firebase-admin/app";
 

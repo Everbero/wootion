@@ -72,7 +72,7 @@ export const getActiveSalesProducts = async (): Promise<Product[]> => {
       const lastEditedTime = product.last_edited_time;
 
       // Verifica se wcID já existe e é um número válido
-      const wcID = product.properties["id-wc"]?.number;
+      const wcID = product.properties["Código e-commerce"]?.number;
       return {
         id,
         name,
